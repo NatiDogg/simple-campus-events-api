@@ -153,7 +153,7 @@ export class EventsService {
   }
 
   findSessionById(eventId: string, sessionId: string): Session {
-    this.findOne(eventId); // Ensures event exists
+    this.findOne(eventId); 
     const session = this.sessions.find((s) => s.id === sessionId && s.eventId === eventId);
     if (!session) {
       throw new NotFoundException(`Session with ID '${sessionId}' not found for event '${eventId}'`);
