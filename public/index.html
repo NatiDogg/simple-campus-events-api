@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Campus Events</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="bg-indigo-600 text-white">
+    <div class="max-w-5xl mx-auto px-4 py-6">
+      <h1 class="text-2xl font-bold">Campus Events</h1>
+      <p class="text-indigo-100 text-sm">Browse and add events happening on campus</p>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <!-- Filters -->
+    <section class="bg-white rounded-lg shadow p-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+      <input id="category" placeholder="Category" class="border rounded px-3 py-2 text-sm" />
+      <input id="location" placeholder="Location" class="border rounded px-3 py-2 text-sm" />
+      <select id="isPublished" class="border rounded px-3 py-2 text-sm">
+        <option value="">All status</option>
+        <option value="true">Published</option>
+        <option value="false">Unpublished</option>
+      </select>
+      <select id="sort" class="border rounded px-3 py-2 text-sm">
+        <option value="eventDate:asc">Date (oldest)</option>
+        <option value="eventDate:desc">Date (newest)</option>
+        <option value="title:asc">Title (A-Z)</option>
+        <option value="title:desc">Title (Z-A)</option>
+      </select>
+      <button id="applyBtn" class="bg-indigo-600 text-white rounded px-3 py-2 text-sm hover:bg-indigo-700">Apply</button>
+    </section>
+
+    <!-- Events list -->
+    <section>
+      <div id="events" class="grid gap-4 md:grid-cols-2"></div>
+      <p id="empty" class="hidden text-center text-gray-500 py-10">No events found.</p>
+      <div class="flex items-center justify-between mt-4">
+        <button id="prevBtn" class="px-3 py-1 rounded border bg-white text-sm disabled:opacity-40">Prev</button>
+        <span id="pageInfo" class="text-sm text-gray-600"></span>
+        <button id="nextBtn" class="px-3 py-1 rounded border bg-white text-sm disabled:opacity-40">Next</button>
+      </div>
+    </section>
+
+    <!-- Create form -->
+    <section class="bg-white rounded-lg shadow p-4">
+      <h2 class="font-semibold mb-3">Add new event</h2>
+      <form id="createForm" class="grid gap-3 md:grid-cols-2">
+        <input name="title" placeholder="Title" required class="border rounded px-3 py-2 text-sm" />
+        <input name="category" placeholder="Category" required class="border rounded px-3 py-2 text-sm" />
+        <input name="location" placeholder="Location" required class="border rounded px-3 py-2 text-sm" />
+        <input name="eventDate" type="datetime-local" required class="border rounded px-3 py-2 text-sm" />
+        <textarea name="description" placeholder="Description" class="border rounded px-3 py-2 text-sm md:col-span-2"></textarea>
+        <label class="text-sm flex items-center gap-2">
+          <input name="isPublished" type="checkbox" checked /> Published
+        </label>
+        <button class="bg-indigo-600 text-white rounded px-3 py-2 text-sm hover:bg-indigo-700 md:col-span-2">Create event</button>
+        <p id="formMsg" class="text-sm md:col-span-2"></p>
+      </form>
+    </section>
+  </main>
+
+  <!-- Sessions modal -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-5">
+      <div class="flex justify-between items-center mb-3">
+        <h3 id="modalTitle" class="font-semibold"></h3>
+        <button id="closeModal" class="text-gray-500 hover:text-black text-xl leading-none">&times;</button>
+      </div>
+      <ul id="sessionList" class="space-y-2 text-sm"></ul>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/events';
+    let page = 1;
+    const $ = (id) => document.getElementById(id);
+
+    async function loadEvents() {
+      const params = new URLSearchParams({ page, limit: 4 });
+      ['category', 'location', 'isPublished'].forEach((k) => $(k).value && params.set(k, $(k).value.trim()));
+      const [sortBy, order] = $('sort').value.split(':');
+      params.set('sortBy', sortBy);
+      params.set('order', order);
+
+      const res = await fetch(`${API}?${params}`);
+      const data = await res.json();
+
+      $('events').innerHTML = data.items.map((e) => `
+        <article class="bg-white rounded-lg shadow p-4 flex flex-col gap-2">
+          <div class="flex justify-between items-start gap-2">
+            <h3 class="font-semibold">${esc(e.title)}</h3>
+            <span class="text-xs px-2 py-0.5 rounded-full ${e.isPublished ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
+              ${e.isPublished ? 'Published' : 'Draft'}
+            </span>
+          </div>
+          <p class="text-sm text-gray-600">${esc(e.description)}</p>
+          <div class="text-xs text-gray-500">
+            ${new Date(e.eventDate).toLocaleString()} &middot; ${esc(e.location)} &middot;
+            <span class="text-indigo-600">${esc(e.category)}</span>
+          </div>
+          <button data-id="${e.id}" data-title="${esc(e.title)}"
+            class="sessions-btn self-start text-sm text-indigo-600 hover:underline">View sessions</button>
+        </article>`).join('');
+
+      $('empty').classList.toggle('hidden', data.items.length > 0);
+      $('pageInfo').textContent = `Page ${data.page} of ${data.totalPages}`;
+      $('prevBtn').disabled = data.page <= 1;
+      $('nextBtn').disabled = data.page >= data.totalPages;
+    }
+
+    async function showSessions(id, title) {
+      $('modalTitle').textContent = title;
+      $('sessionList').innerHTML = '<li class="text-gray-500">Loading...</li>';
+      $('modal').classList.remove('hidden');
+      const res = await fetch(`${API}/${id}/sessions`);
+      const sessions = await res.json();
+      $('sessionList').innerHTML = sessions.length
+        ? sessions.map((s) => `
+            <li class="border rounded p-2">
+              <div class="font-medium">${esc(s.title)}</div>
+              <div class="text-xs text-gray-500">
+                ${new Date(s.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
+                ${new Date(s.endsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} &middot; ${esc(s.room)}
+              </div>
+            </li>`).join('')
+        : '<li class="text-gray-500">No sessions for this event.</li>';
+    }
+
+    function esc(str) {
+      const d = document.createElement('div');
+      d.textContent = str ?? '';
+      return d.innerHTML;
+    }
+
+    // Events
+    $('applyBtn').onclick = () => { page = 1; loadEvents(); };
+    $('prevBtn').onclick = () => { page--; loadEvents(); };
+    $('nextBtn').onclick = () => { page++; loadEvents(); };
+    $('events').addEventListener('click', (e) => {
+      const btn = e.target.closest('.sessions-btn');
+      if (btn) showSessions(btn.dataset.id, btn.dataset.title);
+    });
+    $('closeModal').onclick = () => $('modal').classList.add('hidden');
+    $('modal').onclick = (e) => { if (e.target === $('modal')) $('modal').classList.add('hidden'); };
+
+    // Create
+    $('createForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      const body = {
+        title: f.get('title'),
+        description: f.get('description'),
+        location: f.get('location'),
+        category: f.get('category'),
+        eventDate: new Date(f.get('eventDate')).toISOString(),
+        isPublished: f.get('isPublished') === 'on',
+      };
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const msg = $('formMsg');
+      if (res.ok) {
+        msg.textContent = 'Event created!';
+        msg.className = 'text-sm md:col-span-2 text-green-600';
+        e.target.reset();
+        page = 1;
+        loadEvents();
+      } else {
+        msg.textContent = 'Could not create event.';
+        msg.className = 'text-sm md:col-span-2 text-red-600';
+      }
+    });
+
+    loadEvents();
+  </script>
+</body>
+</html>
