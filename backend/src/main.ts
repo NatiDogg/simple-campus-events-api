@@ -7,6 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix('api');
+  app.enableCors();
  
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
