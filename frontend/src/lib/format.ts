@@ -13,3 +13,11 @@ export function formatDate(iso: string): string {
     timeZone: "Africa/Addis_Ababa",
   });
 }
+
+export function slugify(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+}
