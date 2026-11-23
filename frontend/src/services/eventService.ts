@@ -59,10 +59,20 @@ export function getSessionById(id: string, sessionId: string): Promise<Session> 
   return request<Session>(`/events/${id}/sessions/${sessionId}`);
 }
 
-export function createEvent(event: CreateEventInput): Promise<CampusEvent> {
-  return request<CampusEvent>("/events", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(event),
-  });
+export async function createEvent(event: CreateEventInput): Promise<CampusEvent> {
+  let response: Response;
+  try {
+    response = await fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(event),
+    });
+  } catch {
+    throw new ApiError("Cannot reach the server. Is the backend running?", 0);
+  }
+
+  if (!response.ok) {
+    throw new ApiError(`Request failed (${response.status})`, response.status);
+  }
+  return response.json();
 }
