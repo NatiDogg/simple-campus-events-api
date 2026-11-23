@@ -3,9 +3,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EventsModule } from './events/events.module';
 import { LoggerMiddleware } from './common/logger/logger.middleware';
-
+import { ConfigModule } from '@nestjs/config';
 @Module({
-  imports: [EventsModule],
+  imports: [  ConfigModule.forRoot({ isGlobal: true }),EventsModule ],
   controllers: [AppController],
   providers: [AppService],
 })
