@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Query, Body, HttpCode, HttpStatus, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, HttpCode, HttpStatus, UseInterceptors, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -23,6 +23,11 @@ export class EventsController {
   @ApiResponse({ status: 200, description: 'Successfully retrieved upcoming events.' })
   findUpcoming() {
     return this.eventsService.findUpcoming();
+  }
+    @Get('example')
+  @ApiOperation({ summary: 'Demo: ParseIntPipe on a query parameter' })
+  example(@Query('page', ParseIntPipe) page: number) {
+    return { page, message: 'Page received successfully' };
   }
 
   @Get(':id')
