@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Param, Query, Body, HttpCode, HttpStatus, UseInterceptors, ParseIntPipe } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Post, Param, Query, Body, HttpCode, HttpStatus, UseInterceptors, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiHeader } from '@nestjs/swagger';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { FindEventsQueryDto } from './dto/find-events-query.dto';
 import { TimingInterceptor } from '../common/timing/timing.interceptor';
-
+import { ApiKeyGuard } from '../common/api-key/api-key.guard';
 @ApiTags('events')
 @UseInterceptors(TimingInterceptor)
 @Controller('events')
@@ -62,10 +62,13 @@ export class EventsController {
   }
 
   @Post()
+  @UseGuards(ApiKeyGuard)
   @HttpCode(HttpStatus.CREATED)
+  @ApiHeader({ name: 'x-api-key', required: true, description: 'Classroom API key' })
   @ApiOperation({ summary: 'Create a new event' })
   @ApiResponse({ status: 201, description: 'The event has been successfully created.' })
   @ApiResponse({ status: 400, description: 'Bad Request - validation failed on DTO properties.' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid API key.' })
   create(@Body() createEventDto: CreateEventDto) {
     return this.eventsService.create(createEventDto);
   }
