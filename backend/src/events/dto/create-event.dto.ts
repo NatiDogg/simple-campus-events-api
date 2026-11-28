@@ -1,41 +1,39 @@
-
-
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsBoolean,
+  IsISO8601,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateEventDto {
-  @ApiProperty({
-    example: 'NestJs Event',
-    description: 'The title of the event',
-  })
+  @ApiProperty({ example: 'NestJs Event' })
+  @IsString()
+  @IsNotEmpty()
   title!: string;
 
-  @ApiProperty({
-    example: 'An event about a modern backend framework called Nestjss.',
-    description: 'A detailed description of the event',
-  })
-  description!: string;
+  @ApiPropertyOptional({ example: 'An event about NestJS.' })
+  @IsOptional()
+  @IsString()
+  description?: string;
 
-  @ApiProperty({
-    example: 'Addis Ababa, Ethiopia',
-    description: 'The physical or virtual location of the event',
-  })
+  @ApiProperty({ example: 'Addis Ababa, Ethiopia' })
+  @IsString()
+  @IsNotEmpty()
   location!: string;
 
-  @ApiProperty({
-    example: '2026-06-15T09:00:00.000Z',
-    description: 'The date and time when the event takes place',
-  })
+  @ApiProperty({ example: '2026-12-15T09:00:00.000Z' })
+  @IsISO8601()
   eventDate!: string;
 
-  @ApiProperty({
-    example: 'Technology',
-    description: 'The category or type of the event',
-  })
+  @ApiProperty({ example: 'Technology' })
+  @IsString()
+  @IsNotEmpty()
   category!: string;
 
-  @ApiProperty({
-    example: true,
-    description: 'Flag indicating whether the event is published publicly or not',
-  })
-  isPublished!: boolean;
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  isPublished?: boolean;
 }
